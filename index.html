@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Word Quest: Final Events</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #0f062c, #3d0a9b, #0e1b4d);
+      background-size: 400% 400%;
+      animation: gradientShift 8s ease infinite;
+      color: white;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .container {
+      width: 90%;
+      max-width: 800px;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      text-align: center;
+      color: white;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 20px;
+      text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    }
+
+    .question {
+      font-size: 1.5rem;
+      margin: 20px 0;
+      font-weight: 600;
+    }
+
+    .options {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin: 20px 0;
+    }
+
+    .option {
+      padding: 15px;
+      background: rgba(255, 255, 255, 0.2);
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-size: 1.1rem;
+      text-align: center;
+    }
+
+    .option:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: scale(1.02);
+    }
+
+    .option.correct {
+      background: rgba(100, 255, 100, 0.5);
+      border-color: green;
+    }
+
+    .option.incorrect {
+      background: rgba(255, 100, 100, 0.5);
+      border-color: red;
+    }
+
+    .result {
+      margin-top: 20px;
+      font-size: 1.5rem;
+      font-weight: bold;
+      opacity: 0;
+      transition: opacity 0.5s;
+    }
+
+    .result.show {
+      opacity: 1;
+    }
+
+    .stats {
+      margin-top: 30px;
+      font-size: 1.3rem;
+      line-height: 1.8;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 20px;
+      border-radius: 15px;
+      display: none;
+    }
+
+    .stats.show {
+      display: block;
+      animation: fadeIn 0.8s;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    button {
+      margin-top: 20px;
+      padding: 12px 25px;
+      background: #ff6b6b;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 1.1rem;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      background: #ff5252;
+    }
+
+    .progress {
+      margin: 20px 0;
+      font-size: 1rem;
+    }
+
+    .final-message {
+      font-size: 1.6rem;
+      font-weight: bold;
+      margin: 20px 0;
+      color: #ffd700;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>🎯 Word Quest: Final Events</h1>
+  <div class="progress">Вопрос: <span id="current"></span> / <span id="total"></span></div>
+  <div class="question" id="question"></div>
+  <div class="options" id="options"></div>
+  <div class="result" id="result"></div>
+  <div class="final-message" id="final-message"></div>
+  <div class="stats" id="stats"></div>
+  <button id="next-btn" onclick="nextQuestion()">Далее</button>
+  <button id="restart-btn" style="display:none;" onclick="location.reload()">Начать заново</button>
+</div>
+
+<script>
+  // Все слова из последнего блока — по порядку
+  const words = [
+    { en: "senior year", ru: "выпускной год в школе" },
+    { en: "shock", ru: "возмущать, шокировать" },
+    { en: "sing a carol", ru: "спеть рождественский гимн" },
+    { en: "specific", ru: "особенный" },
+    { en: "summer", ru: "серпик" },
+    { en: "strict", ru: "строгий, суровый" },
+    { en: "surprise party", ru: "вечеринка-сюрприз" },
+    { en: "surprised", ru: "удивленный" },
+    { en: "take pictures", ru: "фотографировать" },
+    { en: "teenage", ru: "подростковый" },
+    { en: "theme", ru: "тема" },
+    { en: "thrilled", ru: "взволнованный" },
+    { en: "throw", ru: "давать, устраивать, организовывать (мероприятие)" },
+    { en: "unique", ru: "уникальный" },
+    { en: "wear a mask", ru: "носить маску" },
+    { en: "wedding reception", ru: "официальное празднование свадьбы (после бенкета)" },
+    { en: "witch", ru: "колдунья, ведьма" },
+    { en: "zoo", ru: "зоопарк" }
+  ];
+
+  let currentQuestionIndex = 0;
+  let score = 0;
+  let selectedOption = null;
+
+  // Получаем 3 неправильных ответа (без рандома)
+  function getWrongAnswers(correctAnswer) {
+    const allWrong = words.map(word => word.ru).filter(meaning => meaning !== correctAnswer);
+    const startIndex = (currentQuestionIndex * 3) % allWrong.length;
+    const wrongAnswers = [];
+    for (let i = 0; i < 3; i++) {
+      wrongAnswers.push(allWrong[(startIndex + i) % allWrong.length]);
+    }
+    return wrongAnswers;
+  }
+
+  function showQuestion() {
+    const question = words[currentQuestionIndex];
+    document.getElementById("question").textContent = `"${question.en}"`;
+    const optionsContainer = document.getElementById("options");
+    optionsContainer.innerHTML = "";
+
+    const wrongAnswers = getWrongAnswers(question.ru);
+    const correctPosition = currentQuestionIndex % 4; // Позиция правильного ответа: 0, 1, 2, 3
+
+    const finalOptions = Array(4).fill(null);
+    finalOptions[correctPosition] = question.ru;
+
+    let wrongIndex = 0;
+    for (let i = 0; i < 4; i++) {
+      if (finalOptions[i] === null) {
+        finalOptions[i] = wrongAnswers[wrongIndex++];
+      }
+    }
+
+    finalOptions.forEach(option => {
+      const div = document.createElement("div");
+      div.classList.add("option");
+      div.textContent = option;
+      div.onclick = () => selectOption(div, option, question.ru);
+      optionsContainer.appendChild(div);
+    });
+
+    document.getElementById("current").textContent = currentQuestionIndex + 1;
+    document.getElementById("total").textContent = words.length;
+    document.getElementById("result").classList.remove("show");
+    document.getElementById("result").textContent = "";
+    document.getElementById("final-message").textContent = "";
+  }
+
+  function selectOption(element, answer, correctAnswer) {
+    if (selectedOption) return;
+
+    selectedOption = element;
+
+    const resultElement = document.getElementById("result");
+
+    if (answer === correctAnswer) {
+      element.classList.add("correct");
+      resultElement.textContent = "✅ Правильно!";
+      score++;
+    } else {
+      element.classList.add("incorrect");
+      resultElement.textContent = `❌ Неправильно! Правильно: "${correctAnswer}"`;
+    }
+
+    resultElement.classList.add("show");
+  }
+
+  function nextQuestion() {
+    currentQuestionIndex++;
+    if (currentQuestionIndex < words.length) {
+      selectedOption = null;
+      showQuestion();
+    } else {
+      showFinalStats();
+    }
+  }
+
+  function showFinalStats() {
+    const total = words.length;
+    const correct = score;
+    const incorrect = total - correct;
+    const percent = Math.round((correct / total) * 100);
+
+    let message = "";
+    if (percent === 100) message = "🔥 Абсолютный чемпион! Ты — мастер слов!";
+    else if (percent >= 80) message = "🎉 Отлично! Ты отлично справился!";
+    else if (percent >= 60) message = "👍 Хорошо! Продолжай в том же духе!";
+    else message = "💪 Не сдавайся! Повтори и станешь сильнее!";
+
+    document.getElementById("final-message").textContent = message;
+
+    const stats = document.getElementById("stats");
+    stats.innerHTML = `
+      <p>✅ Правильных ответов: <strong>${correct}</strong></p>
+      <p>❌ Неправильных ответов: <strong>${incorrect}</strong></p>
+      <p>📊 Успешность: <strong>${percent}%</strong></p>
+      <p>🎯 Всего слов: <strong>${total}</strong></p>
+    `;
+    stats.classList.add("show");
+
+    document.getElementById("next-btn").style.display = "none";
+    document.getElementById("restart-btn").style.display = "inline-block";
+  }
+
+  window.onload = () => {
+    showQuestion();
+  };
+</script>
+
+</body>
+</html>
